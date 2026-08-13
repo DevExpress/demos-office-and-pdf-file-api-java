@@ -1,0 +1,12 @@
+dependencies {
+    implementation 'com.devexpress:devexpress-docs-pdf:26.2.1'
+}
+
+application {
+    mainClass = 'com.devexpress.demos.PdfAttachments'
+}
+
+processResources {
+    from("$rootDir/SharedFiles/PDF/Sample_Alternative.pdf") { into('SharedFiles/PDF') }
+    from("$rootDir/SharedFiles/DevExpress.png") { into('SharedFiles') }
+}

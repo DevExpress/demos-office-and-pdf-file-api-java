@@ -1,0 +1,12 @@
+dependencies {
+    implementation 'com.devexpress:devexpress-docs-pdf:26.2.1'
+}
+
+application {
+    mainClass = 'com.devexpress.demos.PdfXMPMetadata'
+}
+
+processResources {
+    from("$rootDir/SharedFiles/PDF/Sample_Main.pdf") { into('SharedFiles/PDF') }
+    from("$rootDir/SharedFiles/PDF/Sample_Metadata.xmp") { into('SharedFiles/PDF') }
+}

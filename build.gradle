@@ -1,0 +1,28 @@
+subprojects {
+    apply plugin: 'java'
+    apply plugin: 'application'
+
+    java {
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
+    }
+
+    repositories {
+        mavenCentral()
+        mavenLocal()
+    }
+
+    dependencies {
+        runtimeOnly "io.github.humbleui:skija-windows-x64:${skija_ver}"
+        runtimeOnly "org.lwjgl:lwjgl:${lwjgl_ver}:natives-windows"
+        runtimeOnly "org.lwjgl:lwjgl-harfbuzz:${lwjgl_ver}:natives-windows"
+
+        runtimeOnly "io.github.humbleui:skija-linux-x64:${skija_ver}"
+        runtimeOnly "org.lwjgl:lwjgl:${lwjgl_ver}:natives-linux"
+        runtimeOnly "org.lwjgl:lwjgl-harfbuzz:${lwjgl_ver}:natives-linux"
+
+        runtimeOnly "io.github.humbleui:skija-macos-arm64:${skija_ver}"
+        runtimeOnly "org.lwjgl:lwjgl:${lwjgl_ver}:natives-macos-arm64"
+        runtimeOnly "org.lwjgl:lwjgl-harfbuzz:${lwjgl_ver}:natives-macos-arm64"
+    }
+}

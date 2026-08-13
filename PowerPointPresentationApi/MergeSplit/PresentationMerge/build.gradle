@@ -1,0 +1,12 @@
+dependencies {
+    implementation 'com.devexpress:devexpress-docs-presentation:26.2.1'
+}
+
+application {
+    mainClass = 'com.devexpress.demos.PresentationMerge'
+}
+
+processResources {
+    from("$rootDir/SharedFiles/NorthwindPresentation.pptx") { into('SharedFiles') }
+    from("$rootDir/SharedFiles/ProjectStatusOverview.pptx") { into('SharedFiles') }
+}

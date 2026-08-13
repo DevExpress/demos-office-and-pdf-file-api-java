@@ -1,0 +1,7 @@
+dependencies {
+    implementation 'com.devexpress:devexpress-docs-barcode:26.2.1'
+}
+
+application {
+    mainClass = 'com.devexpress.demos.BarcodeAztec'
+}

@@ -1,0 +1,99 @@
+name: Demos
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    types: [ opened, reopened, synchronize, ready_for_review ]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  run-demos:
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name == github.repository
+    name: ${{ matrix.os.label }} / java ${{ matrix.java }}
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [ '21', '25', '26' ]
+        os:
+          - { name: ubuntu-24.04, label: linux-x64 }
+          - { name: windows-2025, label: win-x64 }
+          - { name: macos-14,     label: mac-arm }
+    runs-on: ${{ matrix.os.name }}
+    timeout-minutes: 30
+    env:
+      DXVCS_ARTIFACTS_TOKEN: ${{ secrets.DXVCS_ARTIFACTS_TOKEN }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          gradle-version: '9.6.1'
+          add-job-summary: never
+
+      - name: Install native libraries (Linux)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libgl1 libglx-mesa0 libgl1-mesa-dri \
+            libegl1 libegl-mesa0 \
+            libfontconfig1 libfreetype6
+
+      - name: Download the staged release package
+        if: env.DXVCS_ARTIFACTS_TOKEN != '' && vars.DXVCS_RELEASE_RUN_ID != ''
+        uses: actions/download-artifact@v8
+        with:
+          name: java-release-package
+          path: java-release-package
+          repository: DevExpress/dxvcs
+          run-id: ${{ vars.DXVCS_RELEASE_RUN_ID }}
+          github-token: ${{ secrets.DXVCS_ARTIFACTS_TOKEN }}
+
+      - name: Install the staged release package into the local Maven repository
+        if: env.DXVCS_ARTIFACTS_TOKEN != '' && vars.DXVCS_RELEASE_RUN_ID != ''
+        shell: bash
+        run: |
+          # Maven-layout staging repo; the demos' mavenLocal() picks it up ahead of Maven Central.
+          repo="${HOME}/.m2/repository"
+          mkdir -p "$repo"
+          cp -R java-release-package/. "$repo"/
+          echo "Installed the staged release package into $repo"
+
+      - name: Build every demo (gradle installDist)
+        shell: bash
+        run: gradle installDist --no-daemon --parallel --max-workers=2 --stacktrace
+
+      - name: Run every demo and check exit status
+        shell: bash
+        run: |
+          PY=python3; command -v python3 >/dev/null 2>&1 || PY=python
+          "$PY" .github/scripts/run-java-demos.py . \
+            --report build/demo-test-results/TEST-java-demos.xml
+
+      - name: Upload demo JUnit XML report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: junit-xml-demos-${{ matrix.os.label }}-java${{ matrix.java }}
+          path: build/demo-test-results/*.xml
+          if-no-files-found: warn

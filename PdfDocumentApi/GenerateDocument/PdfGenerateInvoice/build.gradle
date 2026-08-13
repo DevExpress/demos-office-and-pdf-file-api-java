@@ -1,0 +1,11 @@
+dependencies {
+    implementation 'com.devexpress:devexpress-docs-pdf:26.2.1'
+}
+
+application {
+    mainClass = 'com.devexpress.demos.PdfGenerateInvoice'
+}
+
+processResources {
+    from("$rootDir/SharedFiles/PDF/Northwind_Invoice.xml") { into('SharedFiles/PDF') }
+}

@@ -1,0 +1,11 @@
+dependencies {
+    implementation 'com.devexpress:devexpress-docs-presentation:26.2.1'
+}
+
+application {
+    mainClass = 'com.devexpress.demos.PresentationToPdf'
+}
+
+processResources {
+    from("$rootDir/SharedFiles/Sample.pptx") { into('SharedFiles') }
+}

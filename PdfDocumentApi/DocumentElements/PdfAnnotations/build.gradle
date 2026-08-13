@@ -1,0 +1,11 @@
+dependencies {
+    implementation 'com.devexpress:devexpress-docs-pdf:26.2.1'
+}
+
+application {
+    mainClass = 'com.devexpress.demos.PdfAnnotations'
+}
+
+processResources {
+    from("$rootDir/SharedFiles/PDF/Sample_Main.pdf") { into('SharedFiles/PDF') }
+}

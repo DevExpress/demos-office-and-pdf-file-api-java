@@ -1,0 +1,11 @@
+dependencies {
+    implementation 'com.devexpress:devexpress-docs-presentation:26.2.1'
+}
+
+application {
+    mainClass = 'com.devexpress.demos.PresentationShapes'
+}
+
+processResources {
+    from("$rootDir/SharedFiles/Photo1.jpeg") { into('SharedFiles') }
+}

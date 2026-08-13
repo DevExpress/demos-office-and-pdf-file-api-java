@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<fields>
+  <field p2:original="Address" name="Address" xmlns:p2="http://ns.adobe.com/xfdf-transition/">98033, 722 Moss Bay Blvd., Kirkland, WA, USA</field>
+  <field p2:original="MM" name="MM" xmlns:p2="http://ns.adobe.com/xfdf-transition/">08</field>
+  <field p2:original="DD" name="DD" xmlns:p2="http://ns.adobe.com/xfdf-transition/">30</field>
+  <field p2:original="FlightNo" name="FlightNo" xmlns:p2="http://ns.adobe.com/xfdf-transition/">(KL) KLM 876</field>
+  <field p2:original="PassportNo" name="PassportNo" xmlns:p2="http://ns.adobe.com/xfdf-transition/">31195855</field>
+  <field p2:original="VisaNo" name="VisaNo" xmlns:p2="http://ns.adobe.com/xfdf-transition/">73203393</field>
+  <field p2:original="YYYY" name="YYYY" xmlns:p2="http://ns.adobe.com/xfdf-transition/">1985</field>
+  <field p2:original="Gender" name="Gender" xmlns:p2="http://ns.adobe.com/xfdf-transition/">Female</field>
+  <field p2:original="LastName" name="LastName" xmlns:p2="http://ns.adobe.com/xfdf-transition/">Leverling</field>
+  <field p2:original="FirstName" name="FirstName" xmlns:p2="http://ns.adobe.com/xfdf-transition/">Janet</field>
+  <field p2:original="Nationality" name="Nationality" xmlns:p2="http://ns.adobe.com/xfdf-transition/">Thailand</field>
+</fields>
