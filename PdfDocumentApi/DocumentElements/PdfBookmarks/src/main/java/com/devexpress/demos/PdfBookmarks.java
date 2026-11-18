@@ -8,16 +8,18 @@ public class PdfBookmarks {
 
     static final String INPUT_FILE_PATH = "SharedFiles/PDF/Sample_Main.pdf";
     static final String OUTPUT_DIRECTORY_NAME = "Output";
+    static final String OUTPUT_DIRECTORY_DEMO_NAME = PdfBookmarks.class.getSimpleName();
 
     public static void main(String[] args) {
         try {
-            InputStream inputResource = PdfBookmarks.class.getResourceAsStream("/" + INPUT_FILE_PATH);
-            if (inputResource == null)
-                throw new FileNotFoundException("Resource not found: " + INPUT_FILE_PATH);
-            byte[] inputBytes = inputResource.readAllBytes();
-            inputResource.close();
+            byte[] inputBytes;
+            try (InputStream inputResource = PdfBookmarks.class.getResourceAsStream("/" + INPUT_FILE_PATH)) {
+                if (inputResource == null)
+                    throw new FileNotFoundException("Resource not found: " + INPUT_FILE_PATH);
+                inputBytes = inputResource.readAllBytes();
+            }
 
-            File outputDirectory = new File(OUTPUT_DIRECTORY_NAME);
+            File outputDirectory = new File(OUTPUT_DIRECTORY_NAME, OUTPUT_DIRECTORY_DEMO_NAME);
             outputDirectory.mkdirs();
 
             byte[] addedBookmarksBytes;
@@ -30,7 +32,7 @@ public class PdfBookmarks {
 
             System.out.println("Created " + outputDirectory.getAbsolutePath());
         } catch (Exception e) {
-            System.err.println(e);
+            e.printStackTrace();
             System.exit(1);
         }
     }

@@ -7,6 +7,18 @@ subprojects {
         targetCompatibility = JavaVersion.VERSION_21
     }
 
+    application {
+        applicationDefaultJvmArgs = [
+            '--enable-native-access=ALL-UNNAMED',
+            '-Dcom.devexpress.jpeg.backend=managed',
+            '-Dcom.devexpress.tiff.backend=managed'
+        ]
+    }
+
+    tasks.named('run', JavaExec) {
+        workingDir = rootDir
+    }
+
     repositories {
         mavenCentral()
         mavenLocal()

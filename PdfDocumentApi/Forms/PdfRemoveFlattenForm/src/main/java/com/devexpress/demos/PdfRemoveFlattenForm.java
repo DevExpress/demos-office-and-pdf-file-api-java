@@ -1,7 +1,5 @@
 package com.devexpress.demos;
 
-import com.devexpress.jpeg.JpegBackend;
-import com.devexpress.jpeg.JpegCodecSettings;
 import com.devexpress.docs.pdf.*;
 
 import java.io.*;
@@ -10,6 +8,7 @@ public class PdfRemoveFlattenForm {
 
     static final String INPUT_FILE_PATH = "SharedFiles/PDF/Sample_Form.pdf";
     static final String OUTPUT_DIRECTORY_NAME = "Output";
+    static final String OUTPUT_DIRECTORY_DEMO_NAME = PdfRemoveFlattenForm.class.getSimpleName();
 
     static final String[] SAMPLE_FIELDS = {
             "LastName",
@@ -25,19 +24,16 @@ public class PdfRemoveFlattenForm {
             "FlightNo"
     };
 
-    static {
-        JpegCodecSettings.setBackend(JpegBackend.MANAGED);
-    }
-
     public static void main(String[] args) {
         try {
-            InputStream inputResource = PdfRemoveFlattenForm.class.getResourceAsStream("/" + INPUT_FILE_PATH);
-            if (inputResource == null)
-                throw new FileNotFoundException("Resource not found: " + INPUT_FILE_PATH);
-            byte[] inputBytes = inputResource.readAllBytes();
-            inputResource.close();
+            byte[] inputBytes;
+            try (InputStream inputResource = PdfRemoveFlattenForm.class.getResourceAsStream("/" + INPUT_FILE_PATH)) {
+                if (inputResource == null)
+                    throw new FileNotFoundException("Resource not found: " + INPUT_FILE_PATH);
+                inputBytes = inputResource.readAllBytes();
+            }
 
-            File outputDirectory = new File(OUTPUT_DIRECTORY_NAME);
+            File outputDirectory = new File(OUTPUT_DIRECTORY_NAME, OUTPUT_DIRECTORY_DEMO_NAME);
             outputDirectory.mkdirs();
 
             saveDocument(flattenForm(new ByteArrayInputStream(inputBytes), true, SAMPLE_FIELDS),
@@ -51,7 +47,7 @@ public class PdfRemoveFlattenForm {
 
             System.out.println("Created " + outputDirectory.getAbsolutePath());
         } catch (Exception e) {
-            System.err.println(e);
+            e.printStackTrace();
             System.exit(1);
         }
     }

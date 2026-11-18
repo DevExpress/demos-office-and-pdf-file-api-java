@@ -1,0 +1,8 @@
+dependencies {
+    implementation 'com.devexpress:devexpress-docs-presentation:26.2.2'
+}
+
+application {
+    mainClass = 'com.devexpress.demos.PresentationCharts'
+}
+
