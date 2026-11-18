@@ -1,7 +1,5 @@
 package com.devexpress.demos;
 
-import com.devexpress.jpeg.JpegBackend;
-import com.devexpress.jpeg.JpegCodecSettings;
 import com.devexpress.docs.presentation.*;
 
 import java.io.*;
@@ -9,6 +7,8 @@ import java.io.*;
 public class PresentationNotes {
 
     static final String INPUT_FILE_PATH = "SharedFiles/Sample.pptx";
+    static final String OUTPUT_DIRECTORY_NAME = "Output";
+    static final String OUTPUT_DIRECTORY_DEMO_NAME = PresentationNotes.class.getSimpleName();
     static final String OUTPUT_FILE_NAME = "Presentation_Notes.pptx";
     static final String NOTE_TEXT = "Sample note text";
     static final int SLIDE_INDEX = 1;
@@ -17,25 +17,26 @@ public class PresentationNotes {
 
     enum NotesActionType { ADD_NOTE_TO_SLIDE, CLEAR_ALL_NOTES }
 
-    static {
-        JpegCodecSettings.setBackend(JpegBackend.MANAGED);
-    }
-
     public static void main(String[] args) {
         try {
-            InputStream inputResource = PresentationNotes.class.getResourceAsStream("/" + INPUT_FILE_PATH);
-            if (inputResource == null)
-                throw new FileNotFoundException("Resource not found: " + INPUT_FILE_PATH);
+            ByteArrayOutputStream outputStream;
+            try (InputStream inputResource = PresentationNotes.class.getResourceAsStream("/" + INPUT_FILE_PATH)) {
+                if (inputResource == null)
+                    throw new FileNotFoundException("Resource not found: " + INPUT_FILE_PATH);
+                outputStream = applyNotes(inputResource, ACTION_TYPE, NOTE_TEXT, SLIDE_INDEX - 1, OUTPUT_FORMAT);
+            }
 
-            ByteArrayOutputStream outputStream = applyNotes(inputResource, ACTION_TYPE, NOTE_TEXT, SLIDE_INDEX - 1, OUTPUT_FORMAT);
-            inputResource.close();
+            File outputDirectory = new File(OUTPUT_DIRECTORY_NAME, OUTPUT_DIRECTORY_DEMO_NAME);
+            outputDirectory.mkdirs();
 
-            try (FileOutputStream fos = new FileOutputStream(OUTPUT_FILE_NAME)) {
+            File outputFile = new File(outputDirectory, OUTPUT_FILE_NAME);
+
+            try (FileOutputStream fos = new FileOutputStream(outputFile)) {
                 outputStream.writeTo(fos);
             }
-            System.out.println("Created " + OUTPUT_FILE_NAME);
+            System.out.println("Created " + outputFile.getAbsolutePath());
         } catch (Exception e) {
-            System.err.println(e);
+            e.printStackTrace();
             System.exit(1);
         }
     }
@@ -51,7 +52,7 @@ public class PresentationNotes {
                     break;
             }
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            presentation.saveDocument(baos, format);
+            presentation.save(baos, format);
             return baos;
         }
     }

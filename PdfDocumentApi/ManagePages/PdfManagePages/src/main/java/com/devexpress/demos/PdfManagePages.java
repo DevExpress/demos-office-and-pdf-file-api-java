@@ -1,7 +1,5 @@
 package com.devexpress.demos;
 
-import com.devexpress.jpeg.JpegBackend;
-import com.devexpress.jpeg.JpegCodecSettings;
 import com.devexpress.docs.pdf.*;
 
 import java.io.*;
@@ -12,23 +10,21 @@ public class PdfManagePages {
 
     static final String INPUT_FILE_PATH = "SharedFiles/PDF/Sample_Main.pdf";
     static final String OUTPUT_DIRECTORY_NAME = "Output";
+    static final String OUTPUT_DIRECTORY_DEMO_NAME = PdfManagePages.class.getSimpleName();
     static final float NEW_PAGE_WIDTH = 595.28f;
     static final float NEW_PAGE_HEIGHT = 841.89f;
     static final int[] PAGE_RANGE = {0};
 
-    static {
-        JpegCodecSettings.setBackend(JpegBackend.MANAGED);
-    }
-
     public static void main(String[] args) {
         try {
-            InputStream inputResource = PdfManagePages.class.getResourceAsStream("/" + INPUT_FILE_PATH);
-            if (inputResource == null)
-                throw new FileNotFoundException("Resource not found: " + INPUT_FILE_PATH);
-            byte[] inputBytes = inputResource.readAllBytes();
-            inputResource.close();
+            byte[] inputBytes;
+            try (InputStream inputResource = PdfManagePages.class.getResourceAsStream("/" + INPUT_FILE_PATH)) {
+                if (inputResource == null)
+                    throw new FileNotFoundException("Resource not found: " + INPUT_FILE_PATH);
+                inputBytes = inputResource.readAllBytes();
+            }
 
-            File outputDirectory = new File(OUTPUT_DIRECTORY_NAME);
+            File outputDirectory = new File(OUTPUT_DIRECTORY_NAME, OUTPUT_DIRECTORY_DEMO_NAME);
             outputDirectory.mkdirs();
 
             saveDocument(addPage(new ByteArrayInputStream(inputBytes), NEW_PAGE_WIDTH, NEW_PAGE_HEIGHT),
@@ -40,7 +36,7 @@ public class PdfManagePages {
 
             System.out.println("Created " + outputDirectory.getAbsolutePath());
         } catch (Exception e) {
-            System.err.println(e);
+            e.printStackTrace();
             System.exit(1);
         }
     }

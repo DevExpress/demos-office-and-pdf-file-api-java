@@ -1,7 +1,5 @@
 package com.devexpress.demos;
 
-import com.devexpress.jpeg.JpegBackend;
-import com.devexpress.jpeg.JpegCodecSettings;
 import com.devexpress.docs.presentation.*;
 
 import java.io.*;
@@ -11,30 +9,33 @@ import java.util.*;
 public class PresentationExtractText {
 
     static final String INPUT_FILE_PATH = "SharedFiles/Sample.pptx";
+    static final String OUTPUT_DIRECTORY_NAME = "Output";
+    static final String OUTPUT_DIRECTORY_DEMO_NAME = PresentationExtractText.class.getSimpleName();
     static final String OUTPUT_FILE_NAME = "Presentation_Text.txt";
     static final boolean EXTRACT_FROM_SHAPES = true;
     static final boolean EXTRACT_FROM_TABLES = true;
     static final boolean EXTRACT_NOTES = false;
 
-    static {
-        JpegCodecSettings.setBackend(JpegBackend.MANAGED);
-    }
-
     public static void main(String[] args) {
         try {
-            InputStream inputResource = PresentationExtractText.class.getResourceAsStream("/" + INPUT_FILE_PATH);
-            if (inputResource == null)
-                throw new FileNotFoundException("Resource not found: " + INPUT_FILE_PATH);
+            String presentationText;
+            try (InputStream inputResource = PresentationExtractText.class.getResourceAsStream("/" + INPUT_FILE_PATH)) {
+                if (inputResource == null)
+                    throw new FileNotFoundException("Resource not found: " + INPUT_FILE_PATH);
+                presentationText = extractText(inputResource, new int[0], EXTRACT_FROM_SHAPES, EXTRACT_FROM_TABLES, EXTRACT_NOTES);
+            }
 
-            String presentationText = extractText(inputResource, new int[0], EXTRACT_FROM_SHAPES, EXTRACT_FROM_TABLES, EXTRACT_NOTES);
-            inputResource.close();
+            File outputDirectory = new File(OUTPUT_DIRECTORY_NAME, OUTPUT_DIRECTORY_DEMO_NAME);
+            outputDirectory.mkdirs();
 
-            try (FileOutputStream fos = new FileOutputStream(OUTPUT_FILE_NAME)) {
+            File outputFile = new File(outputDirectory, OUTPUT_FILE_NAME);
+
+            try (FileOutputStream fos = new FileOutputStream(outputFile)) {
                 fos.write(presentationText.getBytes(StandardCharsets.UTF_8));
             }
-            System.out.println("Created " + OUTPUT_FILE_NAME);
+            System.out.println("Created " + outputFile.getAbsolutePath());
         } catch (Exception e) {
-            System.err.println(e);
+            e.printStackTrace();
             System.exit(1);
         }
     }
@@ -91,7 +92,7 @@ public class PresentationExtractText {
         StringBuilder builder = new StringBuilder();
         for (int row = 0; row < table.getRows().size(); row++) {
             for (int column = 0; column < table.getColumns().size(); column++) {
-                TableCell cell = table.getThis(row, column);
+                TableCell cell = table.get(row, column);
                 String cellText = cell.getTextArea() != null ? cell.getTextArea().getText() : "";
                 if (cellText == null) cellText = "";
                 builder.append(cellText);

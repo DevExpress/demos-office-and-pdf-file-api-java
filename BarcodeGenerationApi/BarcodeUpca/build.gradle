@@ -1,5 +1,5 @@
 dependencies {
-    implementation 'com.devexpress:devexpress-docs-barcode:26.2.1'
+    implementation 'com.devexpress:devexpress-docs-barcode:26.2.2'
 }
 
 application {

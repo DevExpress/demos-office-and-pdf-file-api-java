@@ -21,7 +21,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java: [ '21', '25', '26' ]
+        java: [ '21', '25', '27' ]
         os:
           - { name: ubuntu-24.04, label: linux-x64 }
           - { name: windows-2025, label: win-x64 }
