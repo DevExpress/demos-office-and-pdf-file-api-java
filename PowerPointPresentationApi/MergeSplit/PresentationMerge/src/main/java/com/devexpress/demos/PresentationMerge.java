@@ -1,7 +1,5 @@
 package com.devexpress.demos;
 
-import com.devexpress.jpeg.JpegBackend;
-import com.devexpress.jpeg.JpegCodecSettings;
 import com.devexpress.docs.presentation.DocumentFormat;
 import com.devexpress.docs.presentation.Presentation;
 import com.devexpress.docs.presentation.Slide;
@@ -16,13 +14,11 @@ public class PresentationMerge {
         "SharedFiles/NorthwindPresentation.pptx",
         "SharedFiles/ProjectStatusOverview.pptx"
     };
+    static final String OUTPUT_DIRECTORY_NAME = "Output";
+    static final String OUTPUT_DIRECTORY_DEMO_NAME = PresentationMerge.class.getSimpleName();
     static final String OUTPUT_FILE_NAME = "Merged_Presentation.pdf";
     static final boolean IS_PDF_OUTPUT = true;
     static final DocumentFormat OUTPUT_FORMAT = DocumentFormat.PPTX;
-
-    static {
-        JpegCodecSettings.setBackend(JpegBackend.MANAGED);
-    }
 
     public static void main(String[] args) {
         try {
@@ -37,16 +33,21 @@ public class PresentationMerge {
 
                 ByteArrayOutputStream outputStream = mergePresentations(inputStreams, OUTPUT_FORMAT, IS_PDF_OUTPUT);
 
-                try (FileOutputStream fos = new FileOutputStream(OUTPUT_FILE_NAME)) {
+                File outputDirectory = new File(OUTPUT_DIRECTORY_NAME, OUTPUT_DIRECTORY_DEMO_NAME);
+                outputDirectory.mkdirs();
+
+                File outputFile = new File(outputDirectory, OUTPUT_FILE_NAME);
+
+                try (FileOutputStream fos = new FileOutputStream(outputFile)) {
                     outputStream.writeTo(fos);
                 }
-                System.out.println("Created " + OUTPUT_FILE_NAME);
+                System.out.println("Created " + outputFile.getAbsolutePath());
             } finally {
                 for (InputStream s : inputStreams)
                     s.close();
             }
         } catch (Exception e) {
-            System.err.println(e);
+            e.printStackTrace();
             System.exit(1);
         }
     }
@@ -65,7 +66,7 @@ public class PresentationMerge {
                 if (pdfOutput)
                     presentation.exportToPdf(baos);
                 else
-                    presentation.saveDocument(baos, targetFormat);
+                    presentation.save(baos, targetFormat);
             }
         }
         return baos;

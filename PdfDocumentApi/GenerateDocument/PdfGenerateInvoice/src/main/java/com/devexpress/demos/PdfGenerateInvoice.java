@@ -1,7 +1,5 @@
 package com.devexpress.demos;
 
-import com.devexpress.jpeg.JpegBackend;
-import com.devexpress.jpeg.JpegCodecSettings;
 import com.devexpress.docs.pdf.*;
 import com.devexpress.drawing.printing.DXPaperKind;
 import com.devexpress.system.drawing.PointF;
@@ -11,34 +9,36 @@ import java.util.*;
 
 public class PdfGenerateInvoice {
 
+    static final String OUTPUT_DIRECTORY_NAME = "Output";
+    static final String OUTPUT_DIRECTORY_DEMO_NAME = PdfGenerateInvoice.class.getSimpleName();
     static final String OUTPUT_FILE_NAME = "GeneratedInvoice.pdf";
     static final boolean INCLUDE_ZUGFERD = true;
     static final String XML_FILE_PATH = "SharedFiles/PDF/Northwind_Invoice.xml";
     static final int INVOICE_NUMBER = 10643;
 
-    static {
-        JpegCodecSettings.setBackend(JpegBackend.MANAGED);
-    }
-
     public static void main(String[] args) {
         try {
-            InputStream xmlStream = null;
-            if (INCLUDE_ZUGFERD) {
-                xmlStream = PdfGenerateInvoice.class.getResourceAsStream("/" + XML_FILE_PATH);
-                if (xmlStream == null)
+            ByteArrayOutputStream outputStream;
+            try (InputStream xmlStream = INCLUDE_ZUGFERD
+                    ? PdfGenerateInvoice.class.getResourceAsStream("/" + XML_FILE_PATH)
+                    : null) {
+                if (INCLUDE_ZUGFERD && xmlStream == null)
                     throw new FileNotFoundException("Resource not found: " + XML_FILE_PATH);
+                outputStream = generateInvoiceDocument(
+                        Locale.forLanguageTag("en-US"), INVOICE_NUMBER, INCLUDE_ZUGFERD, xmlStream);
             }
 
-            ByteArrayOutputStream outputStream = generateInvoiceDocument(
-                    Locale.forLanguageTag("en-US"), INVOICE_NUMBER, INCLUDE_ZUGFERD, xmlStream);
-            if (xmlStream != null) xmlStream.close();
+            File outputDirectory = new File(OUTPUT_DIRECTORY_NAME, OUTPUT_DIRECTORY_DEMO_NAME);
+            outputDirectory.mkdirs();
 
-            try (FileOutputStream fos = new FileOutputStream(OUTPUT_FILE_NAME)) {
+            File outputFile = new File(outputDirectory, OUTPUT_FILE_NAME);
+
+            try (FileOutputStream fos = new FileOutputStream(outputFile)) {
                 outputStream.writeTo(fos);
             }
-            System.out.println("Created " + OUTPUT_FILE_NAME);
+            System.out.println("Created " + outputFile.getAbsolutePath());
         } catch (Exception e) {
-            System.err.println(e);
+            e.printStackTrace();
             System.exit(1);
         }
     }

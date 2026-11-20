@@ -2,13 +2,13 @@ package com.devexpress.demos;
 
 import com.devexpress.docs.office.RestrictedHyperlinkRemovalMode;
 import com.devexpress.docs.presentation.*;
-import com.devexpress.jpeg.JpegBackend;
-import com.devexpress.jpeg.JpegCodecSettings;
 import com.devexpress.docs.SecurityLoadingLimitExceededException;
 import java.io.*;
 
 public class PresentationSecureDocumentLoading {
     static final String INPUT_FILE_PATH = "SharedFiles/Sample.pptx";
+    static final String OUTPUT_DIRECTORY_NAME = "Output";
+    static final String OUTPUT_DIRECTORY_DEMO_NAME = PresentationSecureDocumentLoading.class.getSimpleName();
     static final String OUTPUT_FILE_NAME = "Secure_Document.pptx";
     static final DocumentFormat OUTPUT_FORMAT = DocumentFormat.PPTX;
 
@@ -20,6 +20,7 @@ public class PresentationSecureDocumentLoading {
 
     static final boolean REMOVE_ACTIVEX_CONTENT = true;
     static final boolean REMOVE_CUSTOM_XML_PARTS = true;
+    static final boolean REMOVE_EMBEDDED_CHART_DATA = true;
     static final boolean REMOVE_EXTERNAL_IMAGES = true;
     static final boolean REMOVE_MACROS = true;
     static final boolean REMOVE_OLE_OBJECTS = true;
@@ -27,18 +28,14 @@ public class PresentationSecureDocumentLoading {
 
     record PresentationLoadResult<T>(T outputStream, String errorMessage) {}
 
-    static {
-        JpegCodecSettings.setBackend(JpegBackend.MANAGED);
-    }
-
     public static void main(String[] args) {
         try {
-            InputStream inputResource = PresentationSecureDocumentLoading.class.getResourceAsStream("/" + INPUT_FILE_PATH);
-            if (inputResource == null)
-                throw new FileNotFoundException("Resource not found: " + INPUT_FILE_PATH);
-
-            var loadResult = tryLoadPresentation(inputResource, createPresentationSecurityLoadingLimits(), createPresentationSecurityLoadingOptions(), OUTPUT_FORMAT);
-            inputResource.close();
+            PresentationLoadResult<InputStream> loadResult;
+            try (InputStream inputResource = PresentationSecureDocumentLoading.class.getResourceAsStream("/" + INPUT_FILE_PATH)) {
+                if (inputResource == null)
+                    throw new FileNotFoundException("Resource not found: " + INPUT_FILE_PATH);
+                loadResult = tryLoadPresentation(inputResource, createPresentationSecurityLoadingLimits(), createPresentationSecurityLoadingOptions(), OUTPUT_FORMAT);
+            }
 
             InputStream outputStream = loadResult.outputStream();
             String loadErrorMessage = loadResult.errorMessage();
@@ -47,12 +44,17 @@ public class PresentationSecureDocumentLoading {
                 throw new IllegalStateException(loadErrorMessage);
             }
 
-            try (FileOutputStream fos = new FileOutputStream(OUTPUT_FILE_NAME)) {
+            File outputDirectory = new File(OUTPUT_DIRECTORY_NAME, OUTPUT_DIRECTORY_DEMO_NAME);
+            outputDirectory.mkdirs();
+
+            File outputFile = new File(outputDirectory, OUTPUT_FILE_NAME);
+
+            try (FileOutputStream fos = new FileOutputStream(outputFile)) {
                 outputStream.transferTo(fos);
             }
-            System.out.println("Created " + OUTPUT_FILE_NAME);
+            System.out.println("Created " + outputFile.getAbsolutePath());
         } catch (Exception e) {
-            System.err.println(e);
+            e.printStackTrace();
             System.exit(1);
         }
     }
@@ -69,6 +71,7 @@ public class PresentationSecureDocumentLoading {
         var presentationSecurityLoadingOptions = new PresentationSecurityLoadingOptions();
         presentationSecurityLoadingOptions.setRemoveActiveXContent(REMOVE_ACTIVEX_CONTENT);
         presentationSecurityLoadingOptions.setRemoveCustomXMLParts(REMOVE_CUSTOM_XML_PARTS);
+        presentationSecurityLoadingOptions.setRemoveEmbeddedChartData(REMOVE_EMBEDDED_CHART_DATA);
         presentationSecurityLoadingOptions.setRemoveExternalImages(REMOVE_EXTERNAL_IMAGES);
         presentationSecurityLoadingOptions.setRemoveMacros(REMOVE_MACROS);
         presentationSecurityLoadingOptions.setRemoveOleObjects(REMOVE_OLE_OBJECTS);
@@ -82,7 +85,7 @@ public class PresentationSecureDocumentLoading {
 
         try (Presentation presentation = new Presentation(inputStream, loadOptions)) {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            presentation.saveDocument(baos, outputFormat);
+            presentation.save(baos, outputFormat);
             return new PresentationLoadResult<>(
                     new ByteArrayInputStream(baos.toByteArray()),
                     ""

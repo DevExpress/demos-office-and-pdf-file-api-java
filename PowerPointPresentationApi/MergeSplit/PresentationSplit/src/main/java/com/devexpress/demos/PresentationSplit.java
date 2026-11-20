@@ -1,7 +1,5 @@
 package com.devexpress.demos;
 
-import com.devexpress.jpeg.JpegBackend;
-import com.devexpress.jpeg.JpegCodecSettings;
 import com.devexpress.docs.presentation.DocumentFormat;
 import com.devexpress.docs.presentation.Presentation;
 import com.devexpress.docs.presentation.Slide;
@@ -12,33 +10,29 @@ import java.util.*;
 public class PresentationSplit {
 
     static final String INPUT_FILE_PATH = "SharedFiles/Sample.pptx";
-    static final String OUTPUT_DIRECTORY_NAME = "Split_Presentation";
+    static final String OUTPUT_DIRECTORY_NAME = "Output";
+    static final String OUTPUT_DIRECTORY_DEMO_NAME = PresentationSplit.class.getSimpleName();
     static final String SLIDE_RANGE = "1-2";
     static final boolean IS_SINGLE_FILE_OUTPUT = false;
     static final boolean IS_PDF_OUTPUT = false;
     static final DocumentFormat OUTPUT_FORMAT = DocumentFormat.PPTX;
 
-    static {
-        JpegCodecSettings.setBackend(JpegBackend.MANAGED);
-    }
-
     public static void main(String[] args) {
         try {
-            InputStream inputResource = PresentationSplit.class.getResourceAsStream("/" + INPUT_FILE_PATH);
-            if (inputResource == null)
-                throw new FileNotFoundException("Resource not found: " + INPUT_FILE_PATH);
-
-            File outputDirectory = new File(OUTPUT_DIRECTORY_NAME);
-            if (outputDirectory.exists())
-                deleteDirectory(outputDirectory);
-            outputDirectory.mkdirs();
-
             int[] slideIndexes = parseSlideRange(SLIDE_RANGE);
-            List<ByteArrayOutputStream> slideStreams = extractSlides(inputResource, slideIndexes, IS_SINGLE_FILE_OUTPUT, IS_PDF_OUTPUT, OUTPUT_FORMAT);
-            inputResource.close();
+
+            List<ByteArrayOutputStream> slideStreams;
+            try (InputStream inputResource = PresentationSplit.class.getResourceAsStream("/" + INPUT_FILE_PATH)) {
+                if (inputResource == null)
+                    throw new FileNotFoundException("Resource not found: " + INPUT_FILE_PATH);
+                slideStreams = extractSlides(inputResource, slideIndexes, IS_SINGLE_FILE_OUTPUT, IS_PDF_OUTPUT, OUTPUT_FORMAT);
+            }
 
             if (slideStreams.isEmpty())
                 throw new IllegalStateException("Failed to split presentation.");
+
+            File outputDirectory = new File(OUTPUT_DIRECTORY_NAME, OUTPUT_DIRECTORY_DEMO_NAME);
+            outputDirectory.mkdirs();
 
             for (int index = 0; index < slideStreams.size(); index++) {
                 String extension = IS_PDF_OUTPUT ? "pdf" : "pptx";
@@ -49,7 +43,7 @@ public class PresentationSplit {
             }
             System.out.println("Created " + outputDirectory.getAbsolutePath());
         } catch (Exception e) {
-            System.err.println(e);
+            e.printStackTrace();
             System.exit(1);
         }
     }
@@ -104,7 +98,7 @@ public class PresentationSplit {
                 single.getSlides().add(slides.get(slideIndex));
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 if (isPdfOutput) single.exportToPdf(baos);
-                else single.saveDocument(baos, documentFormat);
+                else single.save(baos, documentFormat);
                 outputStreams.add(baos);
             }
         }
@@ -125,16 +119,7 @@ public class PresentationSplit {
         }
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         if (isPdfOutput) presentation.exportToPdf(baos);
-        else presentation.saveDocument(baos, documentFormat);
+        else presentation.save(baos, documentFormat);
         return Collections.singletonList(baos);
-    }
-
-    static void deleteDirectory(File dir) {
-        File[] files = dir.listFiles();
-        if (files != null)
-            for (File file : files)
-                if (file.isDirectory()) deleteDirectory(file);
-                else file.delete();
-        dir.delete();
     }
 }

@@ -1,7 +1,5 @@
 package com.devexpress.demos;
 
-import com.devexpress.jpeg.JpegBackend;
-import com.devexpress.jpeg.JpegCodecSettings;
 import com.devexpress.docs.OfficeColor;
 import com.devexpress.docs.office.TextProperties;
 import com.devexpress.docs.presentation.DocumentFormat;
@@ -14,6 +12,8 @@ import java.util.List;
 public class PresentationFindReplace {
 
     static final String INPUT_FILE_PATH = "SharedFiles/Sample.pptx";
+    static final String OUTPUT_DIRECTORY_NAME = "Output";
+    static final String OUTPUT_DIRECTORY_DEMO_NAME = PresentationFindReplace.class.getSimpleName();
     static final String OUTPUT_FILE_NAME = "Modified_Presentation.pptx";
     static final String SEARCH_TEXT = "North Wind";
     static final String REPLACE_TEXT = "DoeCompany";
@@ -23,31 +23,32 @@ public class PresentationFindReplace {
 
     enum FindReplaceActionType { REPLACE, REMOVE, HIGHLIGHT }
 
-    static {
-        JpegCodecSettings.setBackend(JpegBackend.MANAGED);
-    }
-
     public static void main(String[] args) {
         try {
-            InputStream inputResource = PresentationFindReplace.class.getResourceAsStream("/" + INPUT_FILE_PATH);
-            if (inputResource == null)
-                throw new FileNotFoundException("Resource not found: " + INPUT_FILE_PATH);
-
             int r = Integer.parseInt(HIGHLIGHT_COLOR.substring(1, 3), 16);
             int g = Integer.parseInt(HIGHLIGHT_COLOR.substring(3, 5), 16);
             int b = Integer.parseInt(HIGHLIGHT_COLOR.substring(5, 7), 16);
             Color highlightColor = Color.fromArgb(255, r, g, b);
 
-            ByteArrayOutputStream outputStream = findReplacePresentationText(
-                inputResource, OPERATION, SEARCH_TEXT, REPLACE_TEXT, highlightColor, OUTPUT_FORMAT);
-            inputResource.close();
+            ByteArrayOutputStream outputStream;
+            try (InputStream inputResource = PresentationFindReplace.class.getResourceAsStream("/" + INPUT_FILE_PATH)) {
+                if (inputResource == null)
+                    throw new FileNotFoundException("Resource not found: " + INPUT_FILE_PATH);
+                outputStream = findReplacePresentationText(
+                    inputResource, OPERATION, SEARCH_TEXT, REPLACE_TEXT, highlightColor, OUTPUT_FORMAT);
+            }
 
-            try (FileOutputStream fos = new FileOutputStream(OUTPUT_FILE_NAME)) {
+            File outputDirectory = new File(OUTPUT_DIRECTORY_NAME, OUTPUT_DIRECTORY_DEMO_NAME);
+            outputDirectory.mkdirs();
+
+            File outputFile = new File(outputDirectory, OUTPUT_FILE_NAME);
+
+            try (FileOutputStream fos = new FileOutputStream(outputFile)) {
                 outputStream.writeTo(fos);
             }
-            System.out.println("Created " + OUTPUT_FILE_NAME);
+            System.out.println("Created " + outputFile.getAbsolutePath());
         } catch (Exception e) {
-            System.err.println(e);
+            e.printStackTrace();
             System.exit(1);
         }
     }
@@ -70,7 +71,7 @@ public class PresentationFindReplace {
                     break;
             }
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            presentation.saveDocument(baos, outputFormat);
+            presentation.save(baos, outputFormat);
             return baos;
         }
     }

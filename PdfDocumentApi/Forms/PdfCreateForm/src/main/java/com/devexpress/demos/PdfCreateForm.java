@@ -1,7 +1,5 @@
 package com.devexpress.demos;
 
-import com.devexpress.jpeg.JpegBackend;
-import com.devexpress.jpeg.JpegCodecSettings;
 import com.devexpress.docs.pdf.*;
 import com.devexpress.drawing.printing.DXPaperKind;
 import com.devexpress.system.drawing.RectangleF;
@@ -12,32 +10,34 @@ import java.util.List;
 
 public class PdfCreateForm {
 
+    static final String OUTPUT_DIRECTORY_NAME = "Output";
+    static final String OUTPUT_DIRECTORY_DEMO_NAME = PdfCreateForm.class.getSimpleName();
     static final String OUTPUT_FILE_NAME = "CreatedForm.pdf";
     static final boolean FILL_FROM_FILE = true;
     static final String FORM_DATA_FILE_PATH = "SharedFiles/PDF/Sample_FormData.xml";
 
-    static {
-        JpegCodecSettings.setBackend(JpegBackend.MANAGED);
-    }
-
     public static void main(String[] args) {
         try {
-            InputStream xmlStream = null;
-            if (FILL_FROM_FILE) {
-                xmlStream = PdfCreateForm.class.getResourceAsStream("/" + FORM_DATA_FILE_PATH);
-                if (xmlStream == null)
+            ByteArrayOutputStream outputStream;
+            try (InputStream xmlStream = FILL_FROM_FILE
+                    ? PdfCreateForm.class.getResourceAsStream("/" + FORM_DATA_FILE_PATH)
+                    : null) {
+                if (FILL_FROM_FILE && xmlStream == null)
                     throw new FileNotFoundException("Resource not found: " + FORM_DATA_FILE_PATH);
+                outputStream = createFormDocument(FILL_FROM_FILE, xmlStream);
             }
 
-            ByteArrayOutputStream outputStream = createFormDocument(FILL_FROM_FILE, xmlStream);
-            if (xmlStream != null) xmlStream.close();
+            File outputDirectory = new File(OUTPUT_DIRECTORY_NAME, OUTPUT_DIRECTORY_DEMO_NAME);
+            outputDirectory.mkdirs();
 
-            try (FileOutputStream fos = new FileOutputStream(OUTPUT_FILE_NAME)) {
+            File outputFile = new File(outputDirectory, OUTPUT_FILE_NAME);
+
+            try (FileOutputStream fos = new FileOutputStream(outputFile)) {
                 outputStream.writeTo(fos);
             }
-            System.out.println("Created " + OUTPUT_FILE_NAME);
+            System.out.println("Created " + outputFile.getAbsolutePath());
         } catch (Exception e) {
-            System.err.println(e);
+            e.printStackTrace();
             System.exit(1);
         }
     }
@@ -123,7 +123,7 @@ public class PdfCreateForm {
 
     static void addComboBoxField(PdfDocument doc, Page page, String name, RectangleF rect, String... options) {
         ComboBoxField field = new ComboBoxField(name);
-        List<ChoiceFieldItem> items = new ArrayList<>();
+        ChoiceFieldItemCollection items = new ChoiceFieldItemCollection();
         for (String option : options)
             items.add(new ChoiceFieldItem(option));
         field.setItems(items);

@@ -2,8 +2,6 @@ package com.devexpress.demos;
 
 import com.devexpress.docs.office.MetadataRemovalScope;
 import com.devexpress.docs.presentation.PresentationSanitizeOptions;
-import com.devexpress.jpeg.JpegBackend;
-import com.devexpress.jpeg.JpegCodecSettings;
 import com.devexpress.docs.presentation.DocumentFormat;
 import com.devexpress.docs.presentation.Presentation;
 import com.devexpress.docs.presentation.PresentationInspectOptions;
@@ -16,6 +14,8 @@ public class PresentationInspectAndSanitize {
     static final String INPUT_FILE_PATH = "SharedFiles/Sample.pptx";
     static final DocumentFormat OUTPUT_FORMAT = DocumentFormat.PPTX;
     static final InspectOperationType OPERATION = InspectOperationType.INSPECT;
+    static final String OUTPUT_DIRECTORY_NAME = "Output";
+    static final String OUTPUT_DIRECTORY_DEMO_NAME = PresentationInspectAndSanitize.class.getSimpleName();
     static final String INSPECT_OUTPUT_FILE_NAME = "Inspection_Log.txt";
     static final String SANITIZE_OUTPUT_FILE_NAME = "Sanitized_Presentation.pptx";
 
@@ -30,28 +30,30 @@ public class PresentationInspectAndSanitize {
     static final boolean REMOVE_OLE_OBJECTS = true;
     static final boolean REMOVE_OFF_SLIDE_CONTENT = true;
 
-    static {
-        JpegCodecSettings.setBackend(JpegBackend.MANAGED);
-    }
-
     public static void main(String[] args) {
         try {
-            InputStream inputResource = PresentationInspectAndSanitize.class.getResourceAsStream("/" + INPUT_FILE_PATH);
-            if (inputResource == null)
-                throw new FileNotFoundException("Resource not found: " + INPUT_FILE_PATH);
-
-            InputStream outputStream = (OPERATION == InspectOperationType.INSPECT)
-                    ? createInspectionLog(inputResource)
-                    : sanitizePresentation(inputResource, OUTPUT_FORMAT, createPresentationSanitizeOptions());
-            inputResource.close();
+            InputStream outputStream;
+            try (InputStream inputResource = PresentationInspectAndSanitize.class.getResourceAsStream("/" + INPUT_FILE_PATH)) {
+                if (inputResource == null)
+                    throw new FileNotFoundException("Resource not found: " + INPUT_FILE_PATH);
+                outputStream = (OPERATION == InspectOperationType.INSPECT)
+                        ? createInspectionLog(inputResource)
+                        : sanitizePresentation(inputResource, OUTPUT_FORMAT, createPresentationSanitizeOptions());
+            }
 
             var outputFileName = OPERATION == InspectOperationType.INSPECT ? INSPECT_OUTPUT_FILE_NAME : SANITIZE_OUTPUT_FILE_NAME;
-            try (FileOutputStream fos = new FileOutputStream(outputFileName)) {
+
+            File outputDirectory = new File(OUTPUT_DIRECTORY_NAME, OUTPUT_DIRECTORY_DEMO_NAME);
+            outputDirectory.mkdirs();
+
+            File outputFile = new File(outputDirectory, outputFileName);
+
+            try (FileOutputStream fos = new FileOutputStream(outputFile)) {
                 outputStream.transferTo(fos);
             }
-            System.out.println("Created " + outputFileName);
+            System.out.println("Created " + outputFile.getAbsolutePath());
         } catch (Exception e) {
-            System.err.println(e);
+            e.printStackTrace();
             System.exit(1);
         }
     }
@@ -107,7 +109,7 @@ public class PresentationInspectAndSanitize {
             presentation.sanitize(sanitizeOptions);
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            presentation.saveDocument(baos, outputFormat);
+            presentation.save(baos, outputFormat);
             return new ByteArrayInputStream(baos.toByteArray());
         }
     }

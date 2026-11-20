@@ -1,7 +1,5 @@
 package com.devexpress.demos;
 
-import com.devexpress.jpeg.JpegBackend;
-import com.devexpress.jpeg.JpegCodecSettings;
 import com.devexpress.docs.pdf.*;
 
 import java.io.*;
@@ -9,6 +7,8 @@ import java.io.*;
 public class PdfEncryptPassword {
 
     static final String INPUT_FILE_PATH = "SharedFiles/PDF/Sample_Main.pdf";
+    static final String OUTPUT_DIRECTORY_NAME = "Output";
+    static final String OUTPUT_DIRECTORY_DEMO_NAME = PdfEncryptPassword.class.getSimpleName();
     static final String OUTPUT_FILE_NAME = "EncryptedDocument.pdf";
     static final EncryptionAlgorithm ALGORITHM = EncryptionAlgorithm.AES_256;
     static final DocumentDataExtractionPermissions DATA_EXTRACTION_PERMISSIONS = DocumentDataExtractionPermissions.ALLOWED;
@@ -18,27 +18,28 @@ public class PdfEncryptPassword {
     static final String OWNER_PASSWORD = "dxdemo-owner";
     static final String USER_PASSWORD = "dxdemo-user";
 
-    static {
-        JpegCodecSettings.setBackend(JpegBackend.MANAGED);
-    }
-
     public static void main(String[] args) {
         try {
-            InputStream inputResource = PdfEncryptPassword.class.getResourceAsStream("/" + INPUT_FILE_PATH);
-            if (inputResource == null)
-                throw new FileNotFoundException("Resource not found: " + INPUT_FILE_PATH);
+            ByteArrayOutputStream outputStream;
+            try (InputStream inputResource = PdfEncryptPassword.class.getResourceAsStream("/" + INPUT_FILE_PATH)) {
+                if (inputResource == null)
+                    throw new FileNotFoundException("Resource not found: " + INPUT_FILE_PATH);
+                outputStream = encrypt(inputResource, ALGORITHM, DATA_EXTRACTION_PERMISSIONS,
+                        INTERACTIVITY_PERMISSIONS, MODIFICATION_PERMISSIONS, PRINT_PERMISSIONS,
+                        OWNER_PASSWORD, USER_PASSWORD);
+            }
 
-            ByteArrayOutputStream outputStream = encrypt(inputResource, ALGORITHM, DATA_EXTRACTION_PERMISSIONS,
-                    INTERACTIVITY_PERMISSIONS, MODIFICATION_PERMISSIONS, PRINT_PERMISSIONS,
-                    OWNER_PASSWORD, USER_PASSWORD);
-            inputResource.close();
+            File outputDirectory = new File(OUTPUT_DIRECTORY_NAME, OUTPUT_DIRECTORY_DEMO_NAME);
+            outputDirectory.mkdirs();
 
-            try (FileOutputStream fos = new FileOutputStream(OUTPUT_FILE_NAME)) {
+            File outputFile = new File(outputDirectory, OUTPUT_FILE_NAME);
+
+            try (FileOutputStream fos = new FileOutputStream(outputFile)) {
                 outputStream.writeTo(fos);
             }
-            System.out.println("Created " + OUTPUT_FILE_NAME);
+            System.out.println("Created " + outputFile.getAbsolutePath());
         } catch (Exception e) {
-            System.err.println(e);
+            e.printStackTrace();
             System.exit(1);
         }
     }

@@ -1,42 +1,44 @@
 package com.devexpress.demos;
 
-import com.devexpress.jpeg.JpegBackend;
-import com.devexpress.jpeg.JpegCodecSettings;
 import com.devexpress.docs.pdf.*;
 import com.devexpress.system.drawing.RectangleF;
 
 import java.io.*;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 
 public class PdfRedaction {
 
     static final String INPUT_FILE_PATH = "SharedFiles/PDF/Sample_Main.pdf";
+    static final String OUTPUT_DIRECTORY_NAME = "Output";
+    static final String OUTPUT_DIRECTORY_DEMO_NAME = PdfRedaction.class.getSimpleName();
     static final String OUTPUT_FILE_NAME = "RedactedDocument.pdf";
     static final String SEARCH_TEXT = "PDF Viewer";
     static final String REDACTION_TEXT = "REDACTED";
     static final boolean APPLY_REDACTION = true;
 
-    static {
-        JpegCodecSettings.setBackend(JpegBackend.MANAGED);
-    }
-
     public static void main(String[] args) {
         try {
-            InputStream inputResource = PdfRedaction.class.getResourceAsStream("/" + INPUT_FILE_PATH);
-            if (inputResource == null)
-                throw new FileNotFoundException("Resource not found: " + INPUT_FILE_PATH);
+            ByteArrayOutputStream outputStream;
+            try (InputStream inputResource = PdfRedaction.class.getResourceAsStream("/" + INPUT_FILE_PATH)) {
+                if (inputResource == null)
+                    throw new FileNotFoundException("Resource not found: " + INPUT_FILE_PATH);
+                outputStream = addRedaction(inputResource, SEARCH_TEXT, REDACTION_TEXT, APPLY_REDACTION);
+            }
 
-            ByteArrayOutputStream outputStream = addRedaction(inputResource, SEARCH_TEXT, REDACTION_TEXT, APPLY_REDACTION);
-            inputResource.close();
+            File outputDirectory = new File(OUTPUT_DIRECTORY_NAME, OUTPUT_DIRECTORY_DEMO_NAME);
+            outputDirectory.mkdirs();
 
-            try (FileOutputStream fos = new FileOutputStream(OUTPUT_FILE_NAME)) {
+            File outputFile = new File(outputDirectory, OUTPUT_FILE_NAME);
+
+            try (FileOutputStream fos = new FileOutputStream(outputFile)) {
                 outputStream.writeTo(fos);
             }
-            System.out.println("Created " + OUTPUT_FILE_NAME);
+            System.out.println("Created " + outputFile.getAbsolutePath());
         } catch (Exception e) {
-            System.err.println(e);
+            e.printStackTrace();
             System.exit(1);
         }
     }
@@ -59,7 +61,7 @@ public class PdfRedaction {
                     annotation.setColor(PdfColor.getRed());
                     if (redactionText != null && !redactionText.isEmpty())
                         annotation.setOverlayText(redactionText);
-                    annotation.setCreationDate(OffsetDateTime.now());
+                    annotation.setCreationDate(OffsetDateTime.now(ZoneOffset.UTC));
                     annotation.setTextJustification(TextJustification.LEFT_JUSTIFIED);
                     annotation.setRepeatText(true);
                     TextAppearance textAppearance = new TextAppearance();
