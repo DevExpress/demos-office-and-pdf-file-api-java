@@ -1,7 +1,5 @@
 package com.devexpress.demos;
 
-import com.devexpress.jpeg.JpegBackend;
-import com.devexpress.jpeg.JpegCodecSettings;
 import com.devexpress.docs.pdf.*;
 
 import java.io.*;
@@ -12,23 +10,20 @@ public class PdfSplitDocuments {
 
     static final String INPUT_FILE_PATH = "SharedFiles/PDF/Sample_Main.pdf";
     static final String OUTPUT_DIRECTORY_NAME = "Output";
+    static final String OUTPUT_DIRECTORY_DEMO_NAME = PdfSplitDocuments.class.getSimpleName();
     static final int[] PAGE_RANGE = new int[0];
-
-    static {
-        JpegCodecSettings.setBackend(JpegBackend.MANAGED);
-    }
 
     public static void main(String[] args) {
         try {
-            InputStream inputResource = PdfSplitDocuments.class.getResourceAsStream("/" + INPUT_FILE_PATH);
-            if (inputResource == null)
-                throw new FileNotFoundException("Resource not found: " + INPUT_FILE_PATH);
-
-            File outputDirectory = new File(OUTPUT_DIRECTORY_NAME);
+            File outputDirectory = new File(OUTPUT_DIRECTORY_NAME, OUTPUT_DIRECTORY_DEMO_NAME);
             outputDirectory.mkdirs();
 
-            List<ByteArrayOutputStream> documents = splitDocuments(inputResource, PAGE_RANGE);
-            inputResource.close();
+            List<ByteArrayOutputStream> documents;
+            try (InputStream inputResource = PdfSplitDocuments.class.getResourceAsStream("/" + INPUT_FILE_PATH)) {
+                if (inputResource == null)
+                    throw new FileNotFoundException("Resource not found: " + INPUT_FILE_PATH);
+                documents = splitDocuments(inputResource, PAGE_RANGE);
+            }
 
             for (int i = 0; i < documents.size(); i++) {
                 File outputFile = new File(outputDirectory, "document_" + (i + 1) + ".pdf");
@@ -38,7 +33,7 @@ public class PdfSplitDocuments {
             }
             System.out.println("Created " + outputDirectory.getAbsolutePath());
         } catch (Exception e) {
-            System.err.println(e);
+            e.printStackTrace();
             System.exit(1);
         }
     }

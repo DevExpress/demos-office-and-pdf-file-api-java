@@ -21,11 +21,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java: [ '21', '25', '26' ]
+        java: [ '21', '25', '27' ]
         os:
           - { name: ubuntu-24.04, label: linux-x64 }
           - { name: windows-2025, label: win-x64 }
-          - { name: macos-14,     label: mac-arm }
+          - { name: macos-latest, label: mac-arm }
     runs-on: ${{ matrix.os.name }}
     timeout-minutes: 30
     env:
@@ -46,7 +46,7 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v6
         with:
-          gradle-version: '9.6.1'
+          gradle-version: '9.9.0'
           add-job-summary: never
 
       - name: Install native libraries (Linux)

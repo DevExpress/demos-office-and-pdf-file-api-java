@@ -1,7 +1,5 @@
 package com.devexpress.demos;
 
-import com.devexpress.jpeg.JpegBackend;
-import com.devexpress.jpeg.JpegCodecSettings;
 import com.devexpress.docs.OfficeImage;
 import com.devexpress.docs.OfficeImageBase;
 import com.devexpress.docs.presentation.*;
@@ -9,31 +7,33 @@ import com.devexpress.drawing.DXImage;
 import com.devexpress.drawing.DXImageFormat;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class PresentationExtractImages {
 
     static final String INPUT_FILE_PATH = "SharedFiles/Sample.pptx";
-    static final String OUTPUT_DIRECTORY_NAME = "Presentation_Images";
+    static final String OUTPUT_DIRECTORY_NAME = "Output";
+    static final String OUTPUT_DIRECTORY_DEMO_NAME = PresentationExtractImages.class.getSimpleName();
     static final DXImageFormat IMAGE_FORMAT = DXImageFormat.getPng();
-
-    static {
-        JpegCodecSettings.setBackend(JpegBackend.MANAGED);
-    }
+    private static final RangeExportMode IMAGE_EXTRACT_MODE = RangeExportMode.ALL;
+    private static final String SLIDE_RANGE = "";
 
     public static void main(String[] args) {
         try {
-            InputStream inputResource = PresentationExtractImages.class.getResourceAsStream("/" + INPUT_FILE_PATH);
-            if (inputResource == null)
-                throw new FileNotFoundException("Resource not found: " + INPUT_FILE_PATH);
+            File outputDirectory = new File(OUTPUT_DIRECTORY_NAME, OUTPUT_DIRECTORY_DEMO_NAME);
+            recreateDirectory(outputDirectory);
 
-            File outputDirectory = new File(OUTPUT_DIRECTORY_NAME);
-            if (outputDirectory.exists())
-                deleteDirectory(outputDirectory);
-            outputDirectory.mkdirs();
-
-            List<ByteArrayOutputStream> imageStreams = extractImages(inputResource, IMAGE_FORMAT, new int[0]);
-            inputResource.close();
+            List<ByteArrayOutputStream> imageStreams;
+            try (InputStream inputResource = PresentationExtractImages.class.getResourceAsStream("/" + INPUT_FILE_PATH)) {
+                if (inputResource == null)
+                    throw new FileNotFoundException("Resource not found: " + INPUT_FILE_PATH);
+                int[] slideRange = getIndexesByRange(IMAGE_EXTRACT_MODE, SLIDE_RANGE);
+                imageStreams = extractImages(inputResource, IMAGE_FORMAT, slideRange);
+            }
 
             if (imageStreams.isEmpty())
                 throw new IllegalStateException("Failed to extract document images.");
@@ -46,7 +46,7 @@ public class PresentationExtractImages {
             }
             System.out.println("Created " + outputDirectory.getAbsolutePath());
         } catch (Exception e) {
-            System.err.println(e);
+            e.printStackTrace();
             System.exit(1);
         }
     }
@@ -94,12 +94,87 @@ public class PresentationExtractImages {
         throw new IllegalArgumentException("Unsupported image format.");
     }
 
-    static void deleteDirectory(File dir) {
-        File[] files = dir.listFiles();
-        if (files != null)
-            for (File file : files)
-                if (file.isDirectory()) deleteDirectory(file);
-                else file.delete();
-        dir.delete();
+    private static void recreateDirectory(File directory) throws IOException {
+        if (directory.exists()) {
+            List<Path> paths;
+            try (Stream<Path> walkedPaths = Files.walk(directory.toPath())) {
+                paths = walkedPaths.sorted(Comparator.reverseOrder()).collect(Collectors.toList());
+            }
+            for (Path path : paths) {
+                Files.delete(path);
+            }
+        }
+        Files.createDirectories(directory.toPath());
+    }
+
+    private static int[] getIndexesByRange(RangeExportMode exportMode, String range) {
+        switch (exportMode) {
+            case FIRST:
+                return new int[] { 0 };
+            case CUSTOM_RANGE:
+                return parseRange(range);
+            default:
+                return new int[0];
+        }
+    }
+
+    private static int[] parseRange(String range) {
+        if (range == null || range.isBlank()) {
+            return new int[0];
+        }
+
+        SortedSet<Integer> result = new TreeSet<>();
+        String[] tokens = range.split("[,; \\t\\r\\n]+");
+        for (String raw : tokens) {
+            String part = raw.trim();
+            if (part.isEmpty()) {
+                continue;
+            }
+
+            int dashIndex = part.indexOf('-');
+            if (dashIndex > 0) {
+                String startText = part.substring(0, dashIndex).trim();
+                String endText = part.substring(dashIndex + 1).trim();
+                Integer maybeStart = tryParseInt(startText);
+                Integer maybeEnd = tryParseInt(endText);
+                if (maybeStart != null && maybeEnd != null) {
+                    int start = maybeStart;
+                    int end = maybeEnd;
+                    if (start <= 0 || end <= 0) {
+                        continue;
+                    }
+                    if (end < start) {
+                        int swap = start;
+                        start = end;
+                        end = swap;
+                    }
+                    for (int value = start; value <= end; value++) {
+                        result.add(value - 1);
+                    }
+                }
+                continue;
+            }
+
+            Integer maybeSingle = tryParseInt(part);
+            if (maybeSingle != null && maybeSingle > 0) {
+                result.add(maybeSingle - 1);
+            }
+        }
+
+        return result.stream().mapToInt(Integer::intValue).toArray();
+    }
+
+    private static Integer tryParseInt(String text) {
+        try {
+            return Integer.parseInt(text);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private enum RangeExportMode {
+        FIRST,
+        ALL,
+        CUSTOM_RANGE
     }
 }

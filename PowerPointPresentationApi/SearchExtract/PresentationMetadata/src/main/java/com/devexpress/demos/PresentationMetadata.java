@@ -1,40 +1,47 @@
 package com.devexpress.demos;
 
-import com.devexpress.jpeg.JpegBackend;
-import com.devexpress.jpeg.JpegCodecSettings;
-import com.devexpress.docs.presentation.DocumentCustomProperty;
+import com.devexpress.docs.office.DocumentCustomProperty;
 import com.devexpress.docs.presentation.DocumentProperties;
 import com.devexpress.docs.presentation.Presentation;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 
 public class PresentationMetadata {
 
     static final String INPUT_FILE_PATH = "SharedFiles/Sample.pptx";
+    static final String OUTPUT_DIRECTORY_NAME = "Output";
+    static final String OUTPUT_DIRECTORY_DEMO_NAME = PresentationMetadata.class.getSimpleName();
     static final String OUTPUT_FILE_NAME = "Document_Metadata.txt";
     static final boolean READ_DOCUMENT_PROPERTIES = true;
     static final boolean READ_CUSTOM_PROPERTIES = true;
-
-    static {
-        JpegCodecSettings.setBackend(JpegBackend.MANAGED);
-    }
+    private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final Instant UNSET_DATE = Instant.parse("0001-01-01T00:00:00Z");
+    private static final String UNSET_DATE_TEXT = "0001-01-01 00:00:00";
 
     public static void main(String[] args) {
         try {
-            InputStream inputResource = PresentationMetadata.class.getResourceAsStream("/" + INPUT_FILE_PATH);
-            if (inputResource == null)
-                throw new FileNotFoundException("Resource not found: " + INPUT_FILE_PATH);
+            String metadataText;
+            try (InputStream inputResource = PresentationMetadata.class.getResourceAsStream("/" + INPUT_FILE_PATH)) {
+                if (inputResource == null)
+                    throw new FileNotFoundException("Resource not found: " + INPUT_FILE_PATH);
+                metadataText = readDocumentPropertiesText(inputResource, READ_DOCUMENT_PROPERTIES, READ_CUSTOM_PROPERTIES);
+            }
 
-            String metadataText = readDocumentPropertiesText(inputResource, READ_DOCUMENT_PROPERTIES, READ_CUSTOM_PROPERTIES);
-            inputResource.close();
+            File outputDirectory = new File(OUTPUT_DIRECTORY_NAME, OUTPUT_DIRECTORY_DEMO_NAME);
+            outputDirectory.mkdirs();
 
-            try (FileOutputStream fos = new FileOutputStream(OUTPUT_FILE_NAME)) {
+            File outputFile = new File(outputDirectory, OUTPUT_FILE_NAME);
+
+            try (FileOutputStream fos = new FileOutputStream(outputFile)) {
                 fos.write(metadataText.getBytes(StandardCharsets.UTF_8));
             }
-            System.out.println("Created " + OUTPUT_FILE_NAME);
+            System.out.println("Created " + outputFile.getAbsolutePath());
         } catch (Exception e) {
-            System.err.println(e);
+            e.printStackTrace();
             System.exit(1);
         }
     }
@@ -53,8 +60,8 @@ public class PresentationMetadata {
                 output.append("Category: ").append(nvl(props.getCategory())).append(System.lineSeparator());
                 output.append("Company: ").append(nvl(props.getCompany())).append(System.lineSeparator());
                 output.append("Manager: ").append(nvl(props.getManager())).append(System.lineSeparator());
-                output.append("Created Date: ").append(props.getCreated()).append(System.lineSeparator());
-                output.append("Last Printed: ").append(props.getPrinted()).append(System.lineSeparator());
+                output.append("Created Date: ").append(formatDate(props.getCreated())).append(System.lineSeparator());
+                output.append("Last Printed: ").append(formatDate(props.getPrinted())).append(System.lineSeparator());
                 output.append(System.lineSeparator());
             }
             if (readCustomProperties) {
@@ -73,6 +80,13 @@ public class PresentationMetadata {
             }
         }
         return output.toString();
+    }
+
+    private static String formatDate(Instant value) {
+        if (value == null || value.equals(UNSET_DATE)) {
+            return UNSET_DATE_TEXT;
+        }
+        return DATE_FORMAT.format(value.atZone(ZoneId.systemDefault()));
     }
 
     static String nvl(String s) {

@@ -1,7 +1,5 @@
 package com.devexpress.demos;
 
-import com.devexpress.jpeg.JpegBackend;
-import com.devexpress.jpeg.JpegCodecSettings;
 import com.devexpress.docs.pdf.*;
 import com.devexpress.drawing.DXImage;
 import com.devexpress.drawing.DXImageFormat;
@@ -14,25 +12,22 @@ public class PdfExtractImages {
 
     static final String INPUT_FILE_PATH = "SharedFiles/PDF/Sample_Alternative.pdf";
     static final String OUTPUT_DIRECTORY_NAME = "Output";
+    static final String OUTPUT_DIRECTORY_DEMO_NAME = PdfExtractImages.class.getSimpleName();
     static final String IMAGE_FORMAT_NAME = "png";
     static final int[] PAGE_RANGE = new int[0];
 
-    static {
-        JpegCodecSettings.setBackend(JpegBackend.MANAGED);
-    }
-
     public static void main(String[] args) {
         try {
-            InputStream inputResource = PdfExtractImages.class.getResourceAsStream("/" + INPUT_FILE_PATH);
-            if (inputResource == null)
-                throw new FileNotFoundException("Resource not found: " + INPUT_FILE_PATH);
-
-            File outputDirectory = new File(OUTPUT_DIRECTORY_NAME);
+            File outputDirectory = new File(OUTPUT_DIRECTORY_NAME, OUTPUT_DIRECTORY_DEMO_NAME);
             outputDirectory.mkdirs();
-
             DXImageFormat imageFormat = getImageFormat(IMAGE_FORMAT_NAME);
-            List<ByteArrayOutputStream> images = extractImages(inputResource, imageFormat, PAGE_RANGE);
-            inputResource.close();
+
+            List<ByteArrayOutputStream> images;
+            try (InputStream inputResource = PdfExtractImages.class.getResourceAsStream("/" + INPUT_FILE_PATH)) {
+                if (inputResource == null)
+                    throw new FileNotFoundException("Resource not found: " + INPUT_FILE_PATH);
+                images = extractImages(inputResource, imageFormat, PAGE_RANGE);
+            }
 
             for (int i = 0; i < images.size(); i++) {
                 File outputFile = new File(outputDirectory, "image_" + (i + 1) + "." + IMAGE_FORMAT_NAME);
@@ -42,7 +37,7 @@ public class PdfExtractImages {
             }
             System.out.println("Created " + outputDirectory.getAbsolutePath());
         } catch (Exception e) {
-            System.err.println(e);
+            e.printStackTrace();
             System.exit(1);
         }
     }
@@ -53,6 +48,7 @@ public class PdfExtractImages {
             case "jpeg": return DXImageFormat.getJpeg();
             case "bmp": return DXImageFormat.getBmp();
             case "tiff": return DXImageFormat.getTiff();
+            case "svg": return DXImageFormat.getSvg();
             default: return DXImageFormat.getPng();
         }
     }

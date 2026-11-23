@@ -1,9 +1,10 @@
 package com.devexpress.demos;
 
-import com.devexpress.jpeg.JpegBackend;
-import com.devexpress.jpeg.JpegCodecSettings;
 import com.devexpress.docs.OfficeColor;
+import com.devexpress.docs.office.GeometryPresetType;
+import com.devexpress.docs.office.ShapeType;
 import com.devexpress.docs.office.SolidFill;
+import com.devexpress.docs.office.LineStyle;
 import com.devexpress.docs.office.TextArea;
 import com.devexpress.docs.presentation.*;
 import com.devexpress.drawing.DXImage;
@@ -15,9 +16,11 @@ import java.io.*;
 public class PresentationShapes {
 
     static final String IMAGE_FILE_PATH = "SharedFiles/Photo1.jpeg";
-    static final String OUTPUT_FILE_NAME = "Presentation_Shapes.pptx";
-    static final DocumentFormat OUTPUT_FORMAT = DocumentFormat.PPTX;
-    static final ShapeActionType SHAPE_ACTION = ShapeActionType.FIGURE;
+    static final String OUTPUT_DIRECTORY_NAME = "Output";
+    static final String OUTPUT_DIRECTORY_DEMO_NAME = PresentationShapes.class.getSimpleName();
+    static final String OUTPUT_FILE_NAME = "Presentation_Shapes";
+    static final boolean IS_PDF_OUTPUT = false;
+    static final ShapeActionType SHAPE_ACTION = ShapeActionType.PICTURE;
     static final GeometryPresetType SHAPE_GEOMETRY = GeometryPresetType.RECTANGLE;
     static final String SHAPE_TEXT = "Sample Text";
     static final float OUTLINE_WIDTH = 1.0f;
@@ -36,52 +39,54 @@ public class PresentationShapes {
         return ShapeType.getRectangle();
     }
 
-    static {
-        JpegCodecSettings.setBackend(JpegBackend.MANAGED);
-    }
-
     public static void main(String[] args) {
         try {
             Color fillColor = parseColor(FILL_COLOR);
             Color outlineColor = parseColor(OUTLINE_COLOR);
-            float defaultX = 1f, defaultY = 1f, defaultWidth = 1.5f, defaultHeight = 1.5f;
+            final float defaultX = 1f, defaultY = 1f, defaultWidth = 1.5f, defaultHeight = 1.5f;
+            final boolean defaultLockAspectRatio = false;
 
             ByteArrayOutputStream outputStream;
             switch (SHAPE_ACTION) {
                 case TEXTBOX:
-                    outputStream = addTextbox(SHAPE_TEXT, defaultX, defaultY, defaultWidth, defaultHeight, false, fillColor, outlineColor, OUTLINE_WIDTH, OUTPUT_FORMAT);
+                    outputStream = addTextbox(SHAPE_TEXT, defaultX, defaultY, defaultWidth, defaultHeight, defaultLockAspectRatio, fillColor, outlineColor, OUTLINE_WIDTH);
                     break;
                 case FIGURE:
-                    outputStream = addFigure(getShapeType(SHAPE_GEOMETRY), defaultX, defaultY, defaultWidth, defaultHeight, false, fillColor, outlineColor, OUTLINE_WIDTH, OUTPUT_FORMAT);
+                    outputStream = addFigure(getShapeType(SHAPE_GEOMETRY), defaultX, defaultY, defaultWidth, defaultHeight, defaultLockAspectRatio, fillColor, outlineColor, OUTLINE_WIDTH);
                     break;
                 case GROUP:
-                    outputStream = addShapeGroup(getShapeType(SHAPE_GEOMETRY), NUMBER_OF_SHAPES, defaultX, defaultY, defaultWidth, defaultHeight, false, fillColor, outlineColor, OUTLINE_WIDTH, OUTPUT_FORMAT);
+                    outputStream = addShapeGroup(getShapeType(SHAPE_GEOMETRY), NUMBER_OF_SHAPES, defaultX, defaultY, defaultWidth, defaultHeight, defaultLockAspectRatio, fillColor, outlineColor, OUTLINE_WIDTH);
                     break;
                 default:
-                    InputStream imageResource = PresentationShapes.class.getResourceAsStream("/" + IMAGE_FILE_PATH);
-                    if (imageResource == null) throw new FileNotFoundException("Resource not found: " + IMAGE_FILE_PATH);
-                    outputStream = addPicture(imageResource, false, defaultX, defaultY, defaultWidth, defaultHeight, outlineColor, OUTLINE_WIDTH, OUTPUT_FORMAT);
-                    imageResource.close();
+                    try (InputStream imageResource = PresentationShapes.class.getResourceAsStream("/" + IMAGE_FILE_PATH)) {
+                        if (imageResource == null) throw new FileNotFoundException("Resource not found: " + IMAGE_FILE_PATH);
+                        outputStream = addPicture(imageResource, defaultLockAspectRatio, defaultX, defaultY, defaultWidth, defaultHeight, outlineColor, OUTLINE_WIDTH);
+                    }
                     break;
             }
 
-            try (FileOutputStream fos = new FileOutputStream(OUTPUT_FILE_NAME)) {
+            File outputDirectory = new File(OUTPUT_DIRECTORY_NAME, OUTPUT_DIRECTORY_DEMO_NAME);
+            outputDirectory.mkdirs();
+            String outputFormat = IS_PDF_OUTPUT ? "pdf" : "pptx";
+            File outputFile = new File(outputDirectory, OUTPUT_FILE_NAME + "." + outputFormat);
+
+            try (FileOutputStream fos = new FileOutputStream(outputFile)) {
                 outputStream.writeTo(fos);
             }
-            System.out.println("Created " + OUTPUT_FILE_NAME);
+            System.out.println("Created " + outputFile.getAbsolutePath());
         } catch (Exception e) {
-            System.err.println(e);
+            e.printStackTrace();
             System.exit(1);
         }
     }
 
 
-    static ByteArrayOutputStream addPicture(InputStream imageStream, boolean lockAspectRatio, float x, float y, float width, float height, Color outlineColor, float outlineWidth, DocumentFormat outputFormat) throws IOException {
+    static ByteArrayOutputStream addPicture(InputStream imageStream, boolean lockAspectRatio, float x, float y, float width, float height, Color outlineColor, float outlineWidth) throws IOException {
         DXImage image = DXImage.fromStream(imageStream);
-        return addImage(image, lockAspectRatio, x, y, width, height, false, 0, 0, 0, 0, outlineColor, outlineWidth, outputFormat);
+        return addImage(image, lockAspectRatio, x, y, width, height, false, 0, 0, 0, 0, outlineColor, outlineWidth);
     }
 
-    static ByteArrayOutputStream addImage(DXImage dxImage, boolean lockAspectRatio, float x, float y, float width, float height, boolean shouldCrop, float cropLeft, float cropRight, float cropTop, float cropBottom, Color outlineColor, float outlineWidth, DocumentFormat outputFormat) throws IOException {
+    static ByteArrayOutputStream addImage(DXImage dxImage, boolean lockAspectRatio, float x, float y, float width, float height, boolean shouldCrop, float cropLeft, float cropRight, float cropTop, float cropBottom, Color outlineColor, float outlineWidth) throws IOException {
         try (Presentation presentation = new Presentation()) {
             presentation.getSlides().clear();
             Slide slide = new Slide(SlideLayoutType.BLANK);
@@ -104,11 +109,11 @@ public class PresentationShapes {
             }
             pictureShape.getLockSettings().setDisableAspectRatioChange(lockAspectRatio);
             slide.getShapes().add(pictureShape);
-            return createOutputStream(presentation, outputFormat);
+            return createOutputStream(presentation);
         }
     }
 
-    static ByteArrayOutputStream addTextbox(String text, float x, float y, float width, float height, boolean lockAspectRatio, Color fillColor, Color outlineColor, float outlineWidth, DocumentFormat outputFormat) throws IOException {
+    static ByteArrayOutputStream addTextbox(String text, float x, float y, float width, float height, boolean lockAspectRatio, Color fillColor, Color outlineColor, float outlineWidth) throws IOException {
         try (Presentation presentation = new Presentation()) {
             presentation.getSlides().clear();
             Slide slide = new Slide(SlideLayoutType.BLANK);
@@ -119,11 +124,11 @@ public class PresentationShapes {
                 new SolidFill(new OfficeColor(Color.fromArgb(255, 0, 0, 0))));
             formatShape(textboxShape, x, y, width, height, lockAspectRatio, outlineWidth, outlineColor, fillColor);
             slide.getShapes().add(textboxShape);
-            return createOutputStream(presentation, outputFormat);
+            return createOutputStream(presentation);
         }
     }
 
-    static ByteArrayOutputStream addFigure(ShapeType shapeType, float x, float y, float width, float height, boolean lockAspectRatio, Color fillColor, Color outlineColor, float outlineWidth, DocumentFormat outputFormat) throws IOException {
+    static ByteArrayOutputStream addFigure(ShapeType shapeType, float x, float y, float width, float height, boolean lockAspectRatio, Color fillColor, Color outlineColor, float outlineWidth) throws IOException {
         try (Presentation presentation = new Presentation()) {
             presentation.getSlides().clear();
             Slide slide = new Slide(SlideLayoutType.BLANK);
@@ -131,11 +136,11 @@ public class PresentationShapes {
             Shape shape = new Shape(shapeType);
             formatShape(shape, x, y, width, height, lockAspectRatio, outlineWidth, outlineColor, fillColor);
             slide.getShapes().add(shape);
-            return createOutputStream(presentation, outputFormat);
+            return createOutputStream(presentation);
         }
     }
 
-    static ByteArrayOutputStream addShapeGroup(ShapeType shapeType, int numberOfShapes, float x, float y, float width, float height, boolean lockAspectRatio, Color fillColor, Color outlineColor, float outlineWidth, DocumentFormat outputFormat) throws IOException {
+    static ByteArrayOutputStream addShapeGroup(ShapeType shapeType, int numberOfShapes, float x, float y, float width, float height, boolean lockAspectRatio, Color fillColor, Color outlineColor, float outlineWidth) throws IOException {
         try (Presentation presentation = new Presentation()) {
             presentation.getSlides().clear();
             Slide slide = new Slide(SlideLayoutType.BLANK);
@@ -149,7 +154,7 @@ public class PresentationShapes {
                 y += 0.5f;
             }
             slide.getShapes().add(groupShape);
-            return createOutputStream(presentation, outputFormat);
+            return createOutputStream(presentation);
         }
     }
 
@@ -166,10 +171,13 @@ public class PresentationShapes {
         shape.getLockSettings().setDisableAspectRatioChange(lockAspectRatio);
     }
 
-    static ByteArrayOutputStream createOutputStream(Presentation presentation, DocumentFormat outputFormat) throws IOException {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        presentation.saveDocument(baos, outputFormat);
-        return baos;
+    static ByteArrayOutputStream createOutputStream(Presentation presentation) throws IOException {
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        if (IS_PDF_OUTPUT)
+            presentation.exportToPdf(stream);
+        else
+            presentation.save(stream, DocumentFormat.PPTX);
+        return stream;
     }
 
     static Color parseColor(String hex) {

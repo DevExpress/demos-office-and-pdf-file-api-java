@@ -1,7 +1,5 @@
 package com.devexpress.demos;
 
-import com.devexpress.jpeg.JpegBackend;
-import com.devexpress.jpeg.JpegCodecSettings;
 import com.devexpress.docs.pdf.*;
 import com.devexpress.system.drawing.RectangleF;
 
@@ -12,6 +10,8 @@ import java.util.List;
 public class PdfClearPages {
 
     static final String INPUT_FILE_PATH = "SharedFiles/PDF/Sample_Main.pdf";
+    static final String OUTPUT_DIRECTORY_NAME = "Output";
+    static final String OUTPUT_DIRECTORY_DEMO_NAME = PdfClearPages.class.getSimpleName();
     static final String OUTPUT_FILE_NAME = "ClearedPages.pdf";
     static final boolean CLEAR_ANNOTATIONS = true;
     static final boolean CLEAR_GRAPHICS = true;
@@ -19,26 +19,27 @@ public class PdfClearPages {
     static final boolean CLEAR_TEXT = true;
     static final int[] PAGE_RANGE = new int[0];
 
-    static {
-        JpegCodecSettings.setBackend(JpegBackend.MANAGED);
-    }
-
     public static void main(String[] args) {
         try {
-            InputStream inputResource = PdfClearPages.class.getResourceAsStream("/" + INPUT_FILE_PATH);
-            if (inputResource == null)
-                throw new FileNotFoundException("Resource not found: " + INPUT_FILE_PATH);
+            ByteArrayOutputStream outputStream;
+            try (InputStream inputResource = PdfClearPages.class.getResourceAsStream("/" + INPUT_FILE_PATH)) {
+                if (inputResource == null)
+                    throw new FileNotFoundException("Resource not found: " + INPUT_FILE_PATH);
+                outputStream = clearPages(inputResource, CLEAR_ANNOTATIONS, CLEAR_GRAPHICS,
+                        CLEAR_IMAGES, CLEAR_TEXT, PAGE_RANGE);
+            }
 
-            ByteArrayOutputStream outputStream = clearPages(inputResource, CLEAR_ANNOTATIONS, CLEAR_GRAPHICS,
-                    CLEAR_IMAGES, CLEAR_TEXT, PAGE_RANGE);
-            inputResource.close();
+            File outputDirectory = new File(OUTPUT_DIRECTORY_NAME, OUTPUT_DIRECTORY_DEMO_NAME);
+            outputDirectory.mkdirs();
 
-            try (FileOutputStream fos = new FileOutputStream(OUTPUT_FILE_NAME)) {
+            File outputFile = new File(outputDirectory, OUTPUT_FILE_NAME);
+
+            try (FileOutputStream fos = new FileOutputStream(outputFile)) {
                 outputStream.writeTo(fos);
             }
-            System.out.println("Created " + OUTPUT_FILE_NAME);
+            System.out.println("Created " + outputFile.getAbsolutePath());
         } catch (Exception e) {
-            System.err.println(e);
+            e.printStackTrace();
             System.exit(1);
         }
     }

@@ -1,7 +1,5 @@
 package com.devexpress.demos;
 
-import com.devexpress.jpeg.JpegBackend;
-import com.devexpress.jpeg.JpegCodecSettings;
 import com.devexpress.docs.pdf.*;
 
 import java.io.*;
@@ -12,20 +10,18 @@ public class PdfXMPMetadata {
     static final String INPUT_FILE_PATH = "SharedFiles/PDF/Sample_Main.pdf";
     static final String METADATA_FILE_PATH = "SharedFiles/PDF/Sample_Metadata.xmp";
     static final String OUTPUT_DIRECTORY_NAME = "Output";
-
-    static {
-        JpegCodecSettings.setBackend(JpegBackend.MANAGED);
-    }
+    static final String OUTPUT_DIRECTORY_DEMO_NAME = PdfXMPMetadata.class.getSimpleName();
 
     public static void main(String[] args) {
         try {
-            InputStream inputResource = PdfXMPMetadata.class.getResourceAsStream("/" + INPUT_FILE_PATH);
-            if (inputResource == null)
-                throw new FileNotFoundException("Resource not found: " + INPUT_FILE_PATH);
-            byte[] inputBytes = inputResource.readAllBytes();
-            inputResource.close();
+            byte[] inputBytes;
+            try (InputStream inputResource = PdfXMPMetadata.class.getResourceAsStream("/" + INPUT_FILE_PATH)) {
+                if (inputResource == null)
+                    throw new FileNotFoundException("Resource not found: " + INPUT_FILE_PATH);
+                inputBytes = inputResource.readAllBytes();
+            }
 
-            File outputDirectory = new File(OUTPUT_DIRECTORY_NAME);
+            File outputDirectory = new File(OUTPUT_DIRECTORY_NAME, OUTPUT_DIRECTORY_DEMO_NAME);
             outputDirectory.mkdirs();
 
             String metadataText = readMetadata(new ByteArrayInputStream(inputBytes));
@@ -36,16 +32,16 @@ public class PdfXMPMetadata {
             saveDocument(removeXmpMetadata(new ByteArrayInputStream(inputBytes)),
                     new File(outputDirectory, "MetadataRemoved.pdf"));
 
-            InputStream metadataResource = PdfXMPMetadata.class.getResourceAsStream("/" + METADATA_FILE_PATH);
-            if (metadataResource == null)
-                throw new FileNotFoundException("Resource not found: " + METADATA_FILE_PATH);
-            saveDocument(addXmpMetadata(new ByteArrayInputStream(inputBytes), metadataResource),
-                    new File(outputDirectory, "MetadataAdded.pdf"));
-            metadataResource.close();
+            try (InputStream metadataResource = PdfXMPMetadata.class.getResourceAsStream("/" + METADATA_FILE_PATH)) {
+                if (metadataResource == null)
+                    throw new FileNotFoundException("Resource not found: " + METADATA_FILE_PATH);
+                saveDocument(addXmpMetadata(new ByteArrayInputStream(inputBytes), metadataResource),
+                        new File(outputDirectory, "MetadataAdded.pdf"));
+            }
 
             System.out.println("Created " + outputDirectory.getAbsolutePath());
         } catch (Exception e) {
-            System.err.println(e);
+            e.printStackTrace();
             System.exit(1);
         }
     }
